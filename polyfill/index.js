@@ -157,14 +157,17 @@ export class HTMLParserStream extends TransformStream {
     this._observer.observe(template.content, { subtree: true, childList: true });
   }
 
-
+  _transformCount = 0;
   constructor() {
     super({
       start: (c) => { controller = c; },
-      transform: (chunk) => { this._doc.write(chunk); },
+      transform: (chunk) => { this._doc.write(chunk);
+        this._transformCount++;
+       },
       flush: () => {
         if (this._bufferedEntry) this._flushNode(...this._bufferedEntry);
         this._doc.close();
+        console.log(`HTMLParserStream _transformCount=${this._transformCount}`);
       }
     });
 
@@ -185,10 +188,21 @@ export class DOMWritable extends WritableStream {
   /**
    * @param {Element} target
    */
+  _writeCount = 0;
+  _startTime = undefined;
   constructor(target) {
     super({
-      write({ node, nextSibling, parent }) {
+      write: ({ node, nextSibling, parent }) => {
+        if (!this._startTime) {
+          this._startTime = performance.now();
+        }
         (parent || target).insertBefore(node, nextSibling);
+        this._writeCount++;
+      },
+      close: () => {
+        let startTime = this._startTime;
+        console.log(`DOMWritable _writeCount=${this._writeCount}`);
+        console.log(`time = ${performance.now() - this._startTime}`);
       }
     });
   }

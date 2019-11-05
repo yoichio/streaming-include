@@ -171,6 +171,7 @@ export default async function noStreamsSolution(url, target) {
   observer.observe(root, { subtree: true, childList: true });
 
   const response = await fetch(url);
+  let startTime = performance.now();
   const decoder = new TextDecoder();
   const reader = response.body.getReader();
 
@@ -182,4 +183,6 @@ export default async function noStreamsSolution(url, target) {
 
   if (bufferedEntry) flushNode(...bufferedEntry);
   doc.close();
+  document.getElementById("log")
+  .innerHTML =`no streaming time = ${performance.now() - startTime}`;
 }

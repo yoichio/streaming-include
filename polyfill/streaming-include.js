@@ -1,5 +1,6 @@
 import { HTMLParserStream, DOMWritable } from './index.js';
 
+/* foobar */
 const observedAttributes = Object.freeze(['src', 'crossorigin']);
 
 /**
@@ -65,13 +66,15 @@ export default class HTMLStreamingIncludeElement extends HTMLElement {
         });
 
         const body = /** @type {ReadableStream<Uint8Array>} */(response.body);
-
+        let startTime = performance.now();
         await body
           // @ts-ignore - Type checker doesn't know about TextDecoderStream.
           .pipeThrough(new TextDecoderStream())
           .pipeThrough(new HTMLParserStream())
           // @ts-ignore - Type checker doesn't know about the signal option.
           .pipeTo(new DOMWritable(this), { signal });
+        this.parentNode.ownerDocument.getElementById("log")
+          .innerHTML =`streaming-include time = ${performance.now() - startTime}`;
       })(),
     ]);
   };

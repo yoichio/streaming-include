@@ -1,6 +1,8 @@
 import '../../polyfill/streaming-include.js';
 import noStreamsSolution from './no-streams-solution.js';
 
+/* foobaffr */
+
 const content = document.querySelector('.content');
 const fetchBtn = document.querySelector('.fetch');
 const streamBtn = document.querySelector('.stream');
@@ -21,6 +23,8 @@ function streamContent() {
 
 async function naiveStreamContent() {
   const responsePromise = fetch(url);
+  let startTime = performance.now();
+
   const doc = document.implementation.createHTMLDocument();
   doc.write('<fake-el>');
   content.append(doc.querySelector('fake-el'));
@@ -36,6 +40,9 @@ async function naiveStreamContent() {
 
   doc.write('</fake-el>');
   doc.close();
+
+  document.getElementById("log")
+  .innerHTML =`native streaming time = ${performance.now() - startTime}`;
 }
 
 function noStreamContent() {
