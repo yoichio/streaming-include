@@ -65,12 +65,14 @@ export default class HTMLStreamingIncludeElement extends HTMLElement {
           credentials: includeCredentials ? 'include' : 'same-origin'
         });
 
+        let chunkbuffer = this.getAttribute("chunkbuffer") || 1;
+        console.log(`chunkbuffer = ${chunkbuffer}`);
         const body = /** @type {ReadableStream<Uint8Array>} */(response.body);
         let startTime = performance.now();
         await body
           // @ts-ignore - Type checker doesn't know about TextDecoderStream.
           .pipeThrough(new TextDecoderStream())
-          .pipeThrough(new HTMLParserStream())
+          .pipeThrough(new HTMLParserStream(chunkbuffer))
           // @ts-ignore - Type checker doesn't know about the signal option.
           .pipeTo(new DOMWritable(this), { signal });
         this.parentNode.ownerDocument.getElementById("log")

@@ -89,6 +89,7 @@ export class HTMLParserStream extends TransformStream {
     }
   });
 
+  _bufferChunks = [];
   /**
    * @this {HTMLParserStream}
    * @param {Node} node
@@ -109,15 +110,23 @@ export class HTMLParserStream extends TransformStream {
       }
     }
 
-    this._controller.enqueue(
+    this._bufferChunks.push(
       new ParserChunk(
         /** @type {Node} */ (this._cloneMap.get(node)),
         !parent || parent === this._root ? null : /** @type {Node} */ (this._cloneMap.get(parent)),
         !nextSibling ? null : /** @type {Node} */ (this._cloneMap.get(nextSibling))
       )
     );
+    if(this._bufferChunks.length >= this._chunkbuffer) {
+      this._flushChunk();
+    }
 
     if (isNewTemplate) this._handleAddedTemplate(/** @type {HTMLTemplateElement} */ (node));
+  }
+
+  _flushChunk = function () {
+    this._controller.enqueue(this._bufferChunks);
+    this._bufferChunks = [];
   }
 
   /**
@@ -158,7 +167,8 @@ export class HTMLParserStream extends TransformStream {
   }
 
   _transformCount = 0;
-  constructor() {
+  _chunkbuffer = 1;
+  constructor(chunkbuffer) {
     super({
       start: (c) => { controller = c; },
       transform: (chunk) => { this._doc.write(chunk);
@@ -166,10 +176,12 @@ export class HTMLParserStream extends TransformStream {
        },
       flush: () => {
         if (this._bufferedEntry) this._flushNode(...this._bufferedEntry);
+        this._flushChunk();
         this._doc.close();
         console.log(`HTMLParserStream _transformCount=${this._transformCount}`);
       }
     });
+    this._chunkbuffer = chunkbuffer;
 
     /** @type {TransformStreamDefaultController<ParserChunk>} */
     var controller;
@@ -192,12 +204,14 @@ export class DOMWritable extends WritableStream {
   _startTime = undefined;
   constructor(target) {
     super({
-      write: ({ node, nextSibling, parent }) => {
-        if (!this._startTime) {
-          this._startTime = performance.now();
+      write: (nodes) => {
+        for(let chunk of nodes) {
+          if (!this._startTime) {
+            this._startTime = performance.now();
+          }
+          (chunk.parent || target).insertBefore(chunk.node, chunk.nextSibling);
+          this._writeCount++;
         }
-        (parent || target).insertBefore(node, nextSibling);
-        this._writeCount++;
       },
       close: () => {
         let startTime = this._startTime;

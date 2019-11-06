@@ -49,10 +49,13 @@ function noStreamContent() {
   noStreamsSolution(url, content);
 }
 
-fetchBtn.addEventListener('click', fetchContent);
 streamBtn.addEventListener('click', streamContent);
 naiveBtn.addEventListener('click', naiveStreamContent);
 noStreamBtn.addEventListener('click', noStreamContent);
+
+document.querySelector('.stream-fat').addEventListener('click', () => {
+  content.innerHTML = `<streaming-include src="${url}" chunkbuffer=10>`;
+});
 
 self.api = {
   fetchContent,
